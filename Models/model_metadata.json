@@ -1,0 +1,101 @@
+{
+  "best_model": "Random Forest",
+  "feature_columns": [
+    "lag_1",
+    "lag_2",
+    "lag_3",
+    "lag_7",
+    "lag_14",
+    "roll_mean_7",
+    "roll_mean_14",
+    "roll_mean_28",
+    "roll_std_7",
+    "day_of_week",
+    "day_of_month",
+    "month",
+    "is_weekend",
+    "day_of_year_sin",
+    "day_of_year_cos",
+    "promo_flag",
+    "unit_cost"
+  ],
+  "categorical_columns": [
+    "product_id",
+    "category"
+  ],
+  "all_feature_names": [
+    "lag_1",
+    "lag_2",
+    "lag_3",
+    "lag_7",
+    "lag_14",
+    "roll_mean_7",
+    "roll_mean_14",
+    "roll_mean_28",
+    "roll_std_7",
+    "day_of_week",
+    "day_of_month",
+    "month",
+    "is_weekend",
+    "day_of_year_sin",
+    "day_of_year_cos",
+    "promo_flag",
+    "unit_cost",
+    "product_id_P001",
+    "product_id_P002",
+    "product_id_P003",
+    "product_id_P004",
+    "product_id_P005",
+    "product_id_P006",
+    "product_id_P007",
+    "product_id_P008",
+    "product_id_P009",
+    "product_id_P010",
+    "category_Accessories",
+    "category_Electronics",
+    "category_Storage"
+  ],
+  "model_comparison": [
+    {
+      "model": "Linear Regression",
+      "MAE": 7.51,
+      "RMSE": 10.37,
+      "MAPE": 19.87
+    },
+    {
+      "model": "Random Forest",
+      "MAE": 7.22,
+      "RMSE": 9.79,
+      "MAPE": 19.75
+    },
+    {
+      "model": "XGBoost",
+      "MAE": 7.29,
+      "RMSE": 9.88,
+      "MAPE": 19.1
+    }
+  ],
+  "trained_at": "2026-09-13T07:34:11.706942",
+  "training_rows": 7020,
+  "validation_period": [
+    "2026-07-16",
+    "2026-09-13"
+  ],
+  "top_features": {
+    "roll_mean_28": 0.4255775651726552,
+    "roll_mean_14": 0.3218392370939609,
+    "promo_flag": 0.05464141361044709,
+    "day_of_week": 0.041420664352131244,
+    "roll_mean_7": 0.0378743151628317,
+    "product_id_P003": 0.017807184580514633,
+    "lag_1": 0.01588306168489277,
+    "unit_cost": 0.01581295145241404,
+    "lag_7": 0.014438775879450017,
+    "lag_14": 0.012183709821614708,
+    "day_of_year_cos": 0.009584208305880837,
+    "lag_3": 0.006898455941789668,
+    "roll_std_7": 0.00617072223652916,
+    "day_of_year_sin": 0.006159360491863943,
+    "lag_2": 0.005202630290461059
+  }
+}
