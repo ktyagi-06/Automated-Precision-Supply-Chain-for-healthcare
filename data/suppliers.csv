@@ -1,0 +1,4 @@
+supplier_id,supplier_name,avg_lead_time_days,on_time_rate,price_index,reliability_rating
+SUP-A,Supplier A,4,0.96,1.05,Excellent
+SUP-B,Supplier B,7,0.88,0.95,Good
+SUP-C,Supplier C,11,0.71,0.85,Poor

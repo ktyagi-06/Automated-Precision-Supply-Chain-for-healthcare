@@ -1,0 +1,11 @@
+product_id,product_name,category,unit_cost,min_stock,max_stock,supplier_id,lead_time_days,warehouse
+P001,Wireless Mouse,Electronics,8.5,60,400,SUP-A,4,WH-North
+P002,Mechanical Keyboard,Electronics,34.0,40,260,SUP-A,4,WH-Central
+P003,USB-C Cable 1m,Accessories,2.1,120,800,SUP-B,7,WH-South
+P004,Bluetooth Headphones,Electronics,22.0,50,320,SUP-A,4,WH-South
+P005,Laptop Stand,Accessories,15.0,25,180,SUP-B,7,WH-South
+P006,Webcam 1080p,Electronics,18.5,30,200,SUP-A,4,WH-Central
+P007,Desk Mat,Accessories,9.0,20,150,SUP-C,11,WH-North
+P008,Portable SSD 1TB,Storage,62.0,15,120,SUP-B,7,WH-Central
+P009,Phone Charger 20W,Accessories,6.2,80,500,SUP-C,11,WH-North
+P010,Monitor Arm,Accessories,28.0,12,100,SUP-B,7,WH-North
