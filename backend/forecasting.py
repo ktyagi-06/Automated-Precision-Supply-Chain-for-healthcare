@@ -10,9 +10,10 @@ from datetime import timedelta
 import numpy as np
 import pandas as pd
 import joblib
+from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
 MODEL_DIR = ROOT_DIR / "Models"
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 _model = joblib.load(MODEL_DIR / "demand_model.joblib")
 _ohe = joblib.load(MODEL_DIR / "category_encoder.joblib")
