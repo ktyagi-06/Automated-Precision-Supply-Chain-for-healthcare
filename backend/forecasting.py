@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 MODEL_DIR = ROOT_DIR / "Models"
-
+DATA_DIR = ROOT_DIR / "data"
 _model = joblib.load(MODEL_DIR / "demand_model.joblib")
 _ohe = joblib.load(MODEL_DIR / "category_encoder.joblib")
 with open(MODEL_DIR / "model_metadata.json") as f:
