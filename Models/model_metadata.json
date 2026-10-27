@@ -1,5 +1,7 @@
 {
+  "model_version": "20261027T190617Z",
   "best_model": "Random Forest",
+  "selection_metric": "MAE_7d",
   "feature_columns": [
     "lag_1",
     "lag_2",
@@ -60,27 +62,48 @@
       "model": "Linear Regression",
       "MAE": 7.51,
       "RMSE": 10.37,
-      "MAPE": 19.87
+      "MAPE": 19.87,
+      "MAE_7d": 8.11,
+      "RMSE_7d": 11.03,
+      "MAPE_7d": 21.14
     },
     {
       "model": "Random Forest",
       "MAE": 7.22,
       "RMSE": 9.79,
-      "MAPE": 19.75
+      "MAPE": 19.75,
+      "MAE_7d": 7.87,
+      "RMSE_7d": 10.54,
+      "MAPE_7d": 21.46
     },
     {
       "model": "XGBoost",
       "MAE": 7.29,
       "RMSE": 9.88,
-      "MAPE": 19.1
+      "MAPE": 19.1,
+      "MAE_7d": 7.94,
+      "RMSE_7d": 10.65,
+      "MAPE_7d": 20.94
     }
   ],
-  "trained_at": "2026-09-13T07:34:11.706942",
+  "trained_at": "2026-10-27T19:06:17.266021+00:00",
   "training_rows": 7020,
+  "data_through": "2026-09-13",
   "validation_period": [
     "2026-07-16",
     "2026-09-13"
   ],
+  "backtest": {
+    "horizon_days": 7,
+    "origins": 11,
+    "step_days": 5
+  },
+  "baseline": {
+    "model": "Baseline: 28-day average",
+    "MAE_7d": 9.45,
+    "RMSE_7d": 12.61,
+    "MAPE_7d": 25.4
+  },
   "top_features": {
     "roll_mean_28": 0.4255775651726552,
     "roll_mean_14": 0.3218392370939609,
@@ -97,5 +120,12 @@
     "roll_std_7": 0.00617072223652916,
     "day_of_year_sin": 0.006159360491863943,
     "lag_2": 0.005202630290461059
+  },
+  "library_versions": {
+    "python": "3.13.17",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "pandas": "3.0.5",
+    "numpy": "2.5.3"
   }
 }

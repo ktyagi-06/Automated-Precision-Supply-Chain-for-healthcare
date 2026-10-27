@@ -1,4 +1,4 @@
-model,MAE,RMSE,MAPE
-Random Forest,7.22,9.79,19.75
-XGBoost,7.29,9.88,19.1
-Linear Regression,7.51,10.37,19.87
+model,MAE,RMSE,MAPE,MAE_7d,RMSE_7d,MAPE_7d
+Random Forest,7.22,9.79,19.75,7.87,10.54,21.46
+XGBoost,7.29,9.88,19.1,7.94,10.65,20.94
+Linear Regression,7.51,10.37,19.87,8.11,11.03,21.14
