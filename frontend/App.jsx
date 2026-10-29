@@ -17,43 +17,100 @@ export default function App() {
   const [modelInfo, setModelInfo] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [chartData, setChartData] = useState(null);
-  const [error, setError] = useState(null);
 
-  // initial load
+  const [initialError, setInitialError] = useState(null);
+  const [summaryError, setSummaryError] = useState(null);
+  const [alertsError, setAlertsError] = useState(null);
+  const [reordersError, setReordersError] = useState(null);
+  const [chartError, setChartError] = useState(null);
+
+  // Load core dashboard data independently so one slow endpoint does not
+  // prevent the other sections from becoming visible.
   useEffect(() => {
-    Promise.all([api.products(), api.suppliers(), api.modelInfo()])
-      .then(([p, s, m]) => {
-        setProducts(p);
-        setSuppliers(s);
-        setModelInfo(m);
-        setSelectedProduct(p[0]?.product_id ?? null);
+    let cancelled = false;
+
+    api.products()
+      .then((data) => {
+        if (cancelled) return;
+        setProducts(data);
+        setSelectedProduct((current) => current ?? data[0]?.product_id ?? null);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => {
+        if (!cancelled) setInitialError(`Products: ${e.message}`);
+      });
+
+    api.suppliers()
+      .then((data) => {
+        if (!cancelled) setSuppliers(data);
+      })
+      .catch((e) => {
+        if (!cancelled) setInitialError((current) => current ? `${current}; Suppliers: ${e.message}` : `Suppliers: ${e.message}`);
+      });
+
+    api.modelInfo()
+      .then((data) => {
+        if (!cancelled) setModelInfo(data);
+      })
+      .catch((e) => {
+        // Model metadata is supplementary; do not block the dashboard.
+        console.error("Could not load model information:", e);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // horizon-dependent data
+  // Load each horizon-dependent section separately. A slow summary request,
+  // for example, will not block alerts or inventory recommendations.
   useEffect(() => {
-    Promise.all([
-      api.dashboardSummary(horizon),
-      api.alerts(horizon),
-      api.reorderAll(horizon),
-    ])
-      .then(([sum, al, ro]) => {
-        setSummary(sum);
-        setAlerts(al);
-        setReorders(ro);
+    let cancelled = false;
+    setSummaryError(null);
+    setAlertsError(null);
+    setReordersError(null);
+
+    api.dashboardSummary(horizon)
+      .then((data) => {
+        if (!cancelled) setSummary(data);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => {
+        if (!cancelled) setSummaryError(e.message);
+      });
+
+    api.alerts(horizon)
+      .then((data) => {
+        if (!cancelled) setAlerts(data);
+      })
+      .catch((e) => {
+        if (!cancelled) setAlertsError(e.message);
+      });
+
+    api.reorderAll(horizon)
+      .then((data) => {
+        if (!cancelled) setReorders(data);
+      })
+      .catch((e) => {
+        if (!cancelled) setReordersError(e.message);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [horizon]);
 
-  // chart data for selected product
+  // Load sales history and forecast for the selected product independently
+  // from the other dashboard sections.
   useEffect(() => {
-    if (!selectedProduct) return;
+    if (!selectedProduct) return undefined;
+    let cancelled = false;
+    setChartError(null);
+
     Promise.all([
       api.salesHistory(selectedProduct, 45),
       api.forecast(selectedProduct, horizon),
     ])
       .then(([history, forecast]) => {
+        if (cancelled) return;
         const histPoints = history.map((h) => ({
           date: h.date.slice(5),
           actual: h.units_sold,
@@ -65,7 +122,13 @@ export default function App() {
         }));
         setChartData({ histPoints, forecastPoints, forecast });
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => {
+        if (!cancelled) setChartError(e.message);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedProduct, horizon]);
 
   const combinedSeries = useMemo(() => {
@@ -77,36 +140,39 @@ export default function App() {
     return [...histPoints, ...bridge, ...forecastPoints];
   }, [chartData]);
 
-  if (error) {
+  // Only block the page for the two datasets needed to build its main layout.
+  if (!products || !suppliers) {
     return (
       <div className="app-shell">
         <div className="container">
-          <div className="error-box">
-            Connection error — {error}. Make sure the backend is running at
-            localhost:8000 (see README).
-          </div>
+          {initialError ? (
+            <div className="error-box">
+              Could not load required dashboard data: {initialError}. Check the Render API and browser Network tab, then refresh.
+            </div>
+          ) : (
+            <div className="loading">CONNECTING TO SUPPLY CHAIN API…</div>
+          )}
         </div>
       </div>
     );
   }
 
-  if (!products || !summary || !alerts || !reorders || !suppliers) {
-    return (
-      <div className="app-shell">
-        <div className="container">
-          <div className="loading">LOADING SUPPLY CHAIN STATE…</div>
-        </div>
-      </div>
-    );
-  }
-
-  const selectedRec = reorders.find((r) => r.product_id === selectedProduct);
+  const selectedRec = reorders?.find((r) => r.product_id === selectedProduct);
 
   return (
     <div className="app-shell">
       <div className="container">
         <Header horizon={horizon} setHorizon={setHorizon} modelInfo={modelInfo} />
-        <KpiStrip summary={summary} />
+
+        {summary ? (
+          <KpiStrip summary={summary} />
+        ) : (
+          <div className="panel" style={{ marginBottom: 20 }}>
+            <div className={summaryError ? "error-box" : "loading"}>
+              {summaryError ? `Dashboard summary unavailable: ${summaryError}` : "Loading dashboard metrics…"}
+            </div>
+          </div>
+        )}
 
         <div className="grid-main">
           <ForecastPanel
@@ -115,17 +181,51 @@ export default function App() {
             setSelectedProduct={setSelectedProduct}
             combinedSeries={combinedSeries}
             chartData={chartData}
+            chartError={chartError}
             selectedRec={selectedRec}
             horizon={horizon}
           />
-          <AlertsPanel alerts={alerts} />
+          {alerts ? (
+            <AlertsPanel alerts={alerts} />
+          ) : (
+            <div className="panel">
+              <div className="panel__header">
+                <h2 className="panel__title">Supply-chain alerts</h2>
+                <span className="panel__hint">{alertsError ? "Unavailable" : "Loading…"}</span>
+              </div>
+              <div className={alertsError ? "error-box" : "loading"}>
+                {alertsError ? `Could not load alerts: ${alertsError}` : "Loading supply-chain alerts…"}
+              </div>
+            </div>
+          )}
         </div>
 
-        <InventoryPanel reorders={reorders} horizon={horizon} />
+        {reorders ? (
+          <InventoryPanel reorders={reorders} horizon={horizon} />
+        ) : (
+          <div className="panel" style={{ marginBottom: 20 }}>
+            <div className="panel__header">
+              <h2 className="panel__title">Inventory status &amp; reorder recommendations</h2>
+              <span className="panel__hint">{horizon}d horizon</span>
+            </div>
+            <div className={reordersError ? "error-box" : "loading"}>
+              {reordersError ? `Could not load inventory recommendations: ${reordersError}` : "Calculating inventory recommendations…"}
+            </div>
+          </div>
+        )}
 
         <div className="footer-grid">
           <SupplierPanel suppliers={suppliers} />
-          <PipelinePanel modelInfo={modelInfo} />
+          {modelInfo ? (
+            <PipelinePanel modelInfo={modelInfo} />
+          ) : (
+            <div className="panel">
+              <div className="panel__header">
+                <h2 className="panel__title">Model comparison</h2>
+              </div>
+              <div className="loading">Loading model metadata…</div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -201,7 +301,7 @@ function KpiStrip({ summary }) {
   );
 }
 
-function ForecastPanel({ products, selectedProduct, setSelectedProduct, combinedSeries, chartData, selectedRec, horizon }) {
+function ForecastPanel({ products, selectedProduct, setSelectedProduct, combinedSeries, chartData, chartError, selectedRec, horizon }) {
   return (
     <div className="panel">
       <div className="panel__header">
@@ -211,6 +311,14 @@ function ForecastPanel({ products, selectedProduct, setSelectedProduct, combined
         </span>
       </div>
       <div className="panel__body">
+        {chartError && (
+          <div className="error-box" style={{ marginBottom: 12 }}>
+            Forecast chart unavailable: {chartError}
+          </div>
+        )}
+        {!chartData && !chartError && (
+          <div className="loading" style={{ marginBottom: 12 }}>Loading demand history and forecast…</div>
+        )}
         <div className="chip-row">
           {products.map((p) => (
             <button
@@ -416,3 +524,4 @@ function PipelinePanel({ modelInfo }) {
     </div>
   );
 }
+
