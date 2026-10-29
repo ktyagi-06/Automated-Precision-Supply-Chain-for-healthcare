@@ -1,20 +1,5 @@
-"""
-Automated Precision Supply Chain — Backend API
-================================================
-FastAPI service exposing:
-  GET  /api/products                 -> product master list + current stock
-  GET  /api/products/{id}            -> single product detail
-  GET  /api/forecast/{id}?days=7     -> ML demand forecast for a product
-  GET  /api/reorder/{id}?days=7      -> reorder recommendation for a product
-  GET  /api/reorder                  -> reorder recommendations for ALL products
-  GET  /api/alerts                   -> active supply-chain alerts
-  GET  /api/suppliers                -> supplier performance table
-  GET  /api/dashboard-summary        -> aggregated KPIs for the dashboard
-  GET  /api/sales-history/{id}       -> recent sales history (for charts)
-  GET  /api/model-info               -> model comparison metrics & metadata
 
-Run: uvicorn main:app --reload --port 8000
-"""
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -66,6 +51,12 @@ def _get_product_row(product_id: str) -> pd.Series:
 
 
 def _build_recommendation_for(product_id: str, horizon_days: int) -> optimization.ReorderRecommendation:
+  @lru_cache(maxsize=3)
+def _get_recommendations(horizon_days: int):
+    return tuple(
+        _build_recommendation_for(pid, horizon_days)
+        for pid in merged_df["product_id"]
+    )
     row = _get_product_row(product_id)
     fc = forecasting.forecast_product(product_id, horizon_days=horizon_days)
     return optimization.build_recommendation(
@@ -82,9 +73,6 @@ def _build_recommendation_for(product_id: str, horizon_days: int) -> optimizatio
     )
 
 
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
@@ -146,15 +134,13 @@ def get_reorder(product_id: str, days: int = Query(DEFAULT_HORIZON, ge=1, le=60)
 @app.get("/api/reorder")
 def get_all_reorders(days: int = Query(DEFAULT_HORIZON, ge=1, le=60)):
     return [
-        _build_recommendation_for(pid, days).to_dict()
-        for pid in merged_df["product_id"]
-    ]
-
+    rec.to_dict()
+    for rec in _get_recommendations(days)
+]
 
 @app.get("/api/alerts")
 def get_alerts(days: int = Query(DEFAULT_HORIZON, ge=1, le=60)):
-    recs = [_build_recommendation_for(pid, days) for pid in merged_df["product_id"]]
-    alerts = []
+recs = _get_recommendations(days)    alerts = []
     for r in recs:
         if r.risk_level == "CRITICAL":
             alerts.append({
@@ -185,7 +171,6 @@ def get_alerts(days: int = Query(DEFAULT_HORIZON, ge=1, le=60)):
                 "message": "Inventory significantly exceeds expected demand",
             })
 
-    # demand spike detection: compare last 7 days vs prior 7 days per product
     for pid in merged_df["product_id"]:
         s = sales_df[sales_df["product_id"] == pid].sort_values("date")
         last7 = s.tail(7)["units_sold"].sum()
@@ -226,8 +211,7 @@ def model_info():
 
 @app.get("/api/dashboard-summary")
 def dashboard_summary(days: int = Query(DEFAULT_HORIZON, ge=1, le=60)):
-    recs = [_build_recommendation_for(pid, days) for pid in merged_df["product_id"]]
-    total_inventory = int(merged_df["current_stock"].sum())
+recs = _get_recommendations(days)    total_inventory = int(merged_df["current_stock"].sum())
     low_stock_count = sum(1 for r in recs if r.risk_level in ("HIGH", "CRITICAL"))
     total_predicted_demand = round(sum(r.predicted_demand_horizon for r in recs), 1)
     overstock_count = sum(1 for r in recs if r.risk_level == "OVERSTOCK")
